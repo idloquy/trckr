@@ -21,6 +21,7 @@ Prerequisites:
 - Go >= 1.25
 - Make
 - C compiler
+- Zig, if cross-compilation is desired
 
 Fetch the source code:
 
