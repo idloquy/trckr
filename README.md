@@ -15,6 +15,10 @@ Furthermore, trckr was designed with multi-device support in mind. The client-se
 - Renaming and deleting tasks
 - Cross-device syncing support
 
+## Installing
+
+Pre-compiled binaries for the client and the server for Linux and Windows are available [here](https://github.com/idloquy/trckr/releases/latest).
+
 ## Building
 
 Prerequisites:
