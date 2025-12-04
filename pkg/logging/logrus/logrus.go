@@ -29,6 +29,7 @@ func mapTaskEvent(ev events.TaskEvent) log.Fields {
 			"type":        ev.Name(),
 			"task":        ev.Task,
 			"stop_reason": ev.StopReason,
+			"stop_tags":   ev.StopTags,
 		}
 	case events.StopEvent:
 		return log.Fields{

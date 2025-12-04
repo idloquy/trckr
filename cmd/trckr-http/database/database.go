@@ -28,7 +28,7 @@ var (
 	ErrNoEvents             = errors.New("no events")
 	ErrNotLatestEvent       = errors.New("specified event is not the latest event")
 	ErrMismatchingEventType = errors.New("mismatching event type")
-	ErrRenameTaskSameName       = errors.New("attempted to rename a task to its own name")
+	ErrRenameTaskSameName   = errors.New("attempted to rename a task to its own name")
 	ErrDeleteTaskRunning    = errors.New("task running")
 	ErrNonUpdatableEvent    = errors.New("non-updatable event")
 	ErrIllegalUpdate        = errors.New("illegal update")
@@ -758,7 +758,7 @@ func (db *sqlDatabase) UpdateEvent(id int, newEvent events.TaskEvent) (TaskEvent
 				// be done using the relative ID, whereas the ID
 				// passed in to us as an argument is the absolute
 				// ID.
-				res = tx.Model(&dbEv).Clauses(clause.Returning{}).Where("id = ?", latestEv.relativeID()).Updates(map[string]any{"Task": newEvent.Task, "StopReason": newEvent.StopReason})
+				res = tx.Model(&dbEv).Clauses(clause.Returning{}).Where("id = ?", latestEv.relativeID()).Updates(map[string]any{"Task": newEvent.Task, "StopReason": newEvent.StopReason, "StopTags": NewStringArray(newEvent.StopTags)})
 				if res.Error != nil {
 					break
 				}
@@ -823,7 +823,7 @@ func (db *sqlDatabase) UpdateEvent(id int, newEvent events.TaskEvent) (TaskEvent
 					if res.Error != nil {
 						break
 					}
-	
+
 					res = tx.Model(&task).Where("name = ?", switchEv.NewTask).Update("state", tasks.StoppedState)
 					if res.Error != nil {
 						break
@@ -879,8 +879,8 @@ func (db *sqlDatabase) UndoEvent(id int) error {
 				// No need to check the error; the task is necessarily
 				// valid if the event was in the database in the
 				// first place.
-				task, _ := newDBTask(dbEv.Event.Task)
-				res = tx.Model(&task).Where("name = ?", dbEv.Event.Task).Update("state", tasks.StoppedState)
+				task, _ := newDBTask(dbEv.Task)
+				res = tx.Model(&task).Where("name = ?", dbEv.Task).Update("state", tasks.StoppedState)
 			case dbStopEvent:
 				task, _ := newDBTask(dbEv.Event.Task)
 				res = tx.Model(&task).Where("name = ?", dbEv.Event.Task).Update("state", tasks.RunningState)
@@ -1119,55 +1119,83 @@ func (proxyEvent) TableName() string {
 	return "events"
 }
 
-type BaseTaskEvent[T events.TaskEvent] struct {
+type BaseTaskEvent struct {
 	ID        int `gorm:"primaryKey"`
 	CreatedAt time.Time
 	DeletedAt gorm.DeletedAt
-	Event     T `gorm:"embedded"`
 	// In order for polymorphism to work without the base type having any extra
 	// fields, this needs to be a pointer and set to a non-nil value when used.
 	ProxyEvent *proxyEvent `gorm:"polymorphic:Event"`
 }
 
-func (ev BaseTaskEvent[T]) BeforeCreate(tx *gorm.DB) error {
-	if err := ev.Event.Validate(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (ev BaseTaskEvent[T]) BeforeSave(tx *gorm.DB) error {
-	if err := ev.Event.Validate(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (ev BaseTaskEvent[T]) event() events.TaskEvent {
-	return ev.Event
-}
-
-func (ev BaseTaskEvent[T]) proxyEvent() proxyEvent {
+func (ev BaseTaskEvent) proxyEvent() proxyEvent {
 	return *ev.ProxyEvent
 }
 
-func (ev BaseTaskEvent[T]) relativeID() int {
-	return ev.ID
-}
-
-func (ev BaseTaskEvent[T]) absoluteID() int {
+func (ev BaseTaskEvent) absoluteID() int {
 	return *ev.ProxyEvent.ID
 }
 
-func (ev BaseTaskEvent[T]) at() time.Time {
+func (ev BaseTaskEvent) relativeID() int {
+	return ev.ID
+}
+
+func (ev BaseTaskEvent) at() time.Time {
 	return ev.CreatedAt
 }
 
+type BaseTaskEventEmbedded[T events.TaskEvent] struct {
+	BaseTaskEvent
+	Event T `gorm:"embedded"`
+}
+
+func (ev BaseTaskEventEmbedded[T]) BeforeCreate(tx *gorm.DB) error {
+	if err := ev.Event.Validate(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ev BaseTaskEventEmbedded[T]) BeforeSave(tx *gorm.DB) error {
+	if err := ev.Event.Validate(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ev BaseTaskEventEmbedded[T]) event() events.TaskEvent {
+	return ev.Event
+}
+
+// Duplicating every field of StartEvent is required due to a bug in GORM that
+// keeps us from being able to override the StopTags field, which has an unsupported
+// format.
 type dbStartEvent struct {
-	BaseTaskEvent[events.StartEvent]
-	TaskInstance dbTask `gorm:"foreignKey:Task;constraint:OnUpdate:CASCADE"` // effectively replaces the task field with a foreign key column.
+	BaseTaskEvent
+	Task         string
+	TaskInstance dbTask `gorm:"foreignKey:Task;constraint:OnUpdate:CASCADE"`
+	StopReason   string
+	StopTags     *StringArray
+}
+
+func (ev dbStartEvent) BeforeCreate(tx *gorm.DB) error {
+	_, err := events.NewStartEvent(ev.Task, ev.StopReason, ev.StopTags.arr)
+	return err
+}
+
+func (ev dbStartEvent) event() events.TaskEvent {
+	var stopTags []string
+	if ev.StopTags != nil {
+		stopTags = ev.StopTags.arr
+	}
+
+	return events.StartEvent{
+		Task:       ev.Task,
+		StopReason: ev.StopReason,
+		StopTags:   stopTags,
+	}
 }
 
 func (dbStartEvent) TableName() string {
@@ -1180,10 +1208,12 @@ func newDBStartEvent(ev events.StartEvent) (dbStartEvent, error) {
 	}
 
 	return dbStartEvent{
-		BaseTaskEvent: BaseTaskEvent[events.StartEvent]{
-			Event:      ev,
+		BaseTaskEvent: BaseTaskEvent{
 			ProxyEvent: &proxyEvent{},
 		},
+		Task:       ev.Task,
+		StopReason: ev.StopReason,
+		StopTags:   NewStringArray(ev.StopTags),
 	}, nil
 }
 
@@ -1198,8 +1228,8 @@ func newDBStartEventWithProxy(ev events.StartEvent, proxy proxyEvent) (dbStartEv
 }
 
 type dbStopEvent struct {
-	BaseTaskEvent[events.StopEvent]
-	TaskInstance dbTask `gorm:"foreignKey:Task;constraint:OnUpdate:CASCADE"`
+	BaseTaskEventEmbedded[events.StopEvent]
+	TaskInstance dbTask `gorm:"foreignKey:Task;constraint:OnUpdate:CASCADE"` // effectively replaces the task field with a foreign key column.
 }
 
 func (dbStopEvent) TableName() string {
@@ -1212,9 +1242,11 @@ func newDBStopEvent(ev events.StopEvent) (dbStopEvent, error) {
 	}
 
 	return dbStopEvent{
-		BaseTaskEvent: BaseTaskEvent[events.StopEvent]{
-			Event:      ev,
-			ProxyEvent: &proxyEvent{},
+		BaseTaskEventEmbedded: BaseTaskEventEmbedded[events.StopEvent]{
+			BaseTaskEvent: BaseTaskEvent{
+				ProxyEvent: &proxyEvent{},
+			},
+			Event: ev,
 		},
 	}, nil
 }
@@ -1230,7 +1262,7 @@ func newDBStopEventsWithProxy(ev events.StopEvent, proxy proxyEvent) (dbStopEven
 }
 
 type dbSwitchEvent struct {
-	BaseTaskEvent[events.SwitchEvent]
+	BaseTaskEventEmbedded[events.SwitchEvent]
 	OldTaskInstance dbTask `gorm:"foreignKey:OldTask;constraint:OnUpdate:CASCADE"`
 	NewTaskInstance dbTask `gorm:"foreignKey:NewTask;constraint:OnUpdate:CASCADE"`
 }
@@ -1244,9 +1276,11 @@ func newDBSwitchEvent(ev events.SwitchEvent) (dbSwitchEvent, error) {
 		return dbSwitchEvent{}, err
 	}
 	return dbSwitchEvent{
-		BaseTaskEvent: BaseTaskEvent[events.SwitchEvent]{
-			Event:      ev,
-			ProxyEvent: &proxyEvent{},
+		BaseTaskEventEmbedded: BaseTaskEventEmbedded[events.SwitchEvent]{
+			BaseTaskEvent: BaseTaskEvent{
+				ProxyEvent: &proxyEvent{},
+			},
+			Event: ev,
 		},
 	}, nil
 }

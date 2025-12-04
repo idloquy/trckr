@@ -706,7 +706,7 @@ type Args struct {
 	Verbose    bool   `arg:"-v,--verbose" help:"output debug logs"`
 	ListenAddr string `arg:"-l,--listen-addr" default:":8080" help:"custom listen address"`
 	Database   string `arg:"-d,--database-file" help:"custom path to the database file"`
-	Version bool `arg:"--version" help:"display the version"`
+	Version    bool   `arg:"--version" help:"display the version"`
 }
 
 func main() {

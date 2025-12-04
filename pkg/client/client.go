@@ -335,10 +335,9 @@ func (c *Client) addEvent(ev events.TaskEvent) error {
 	return err
 }
 
-// StartTask starts the specified task, using stopReason as the stop reason if
-// non-empty.
-func (c *Client) StartTask(taskName string, stopReason string) error {
-	ev, err := events.NewStartEvent(taskName, stopReason)
+// StartTask starts the specified task, using stopReason and stopTags if non-empty.
+func (c *Client) StartTask(taskName string, stopReason string, stopTags []string) error {
+	ev, err := events.NewStartEvent(taskName, stopReason, stopTags)
 	if err != nil {
 		return &InvalidParamsError{Err: err}
 	}
@@ -528,6 +527,7 @@ type ProductivePeriod struct {
 // A NonProductivePeriod represents a length of time during which no task is running.
 type NonProductivePeriod struct {
 	Reason    string
+	Tags      []string
 	StartTime time.Time
 	StopTime  time.Time
 }
@@ -538,6 +538,7 @@ type Period interface {
 	periodMarker()
 	IsProductive() bool
 	StartedAt() time.Time
+	Equal(Period) bool
 }
 
 // A FullyBoundedPeriod is a Period which has both a start and an end.
@@ -556,6 +557,10 @@ func (PartialProductivePeriod) IsProductive() bool {
 // StartedAt returns the time at which the period started.
 func (p PartialProductivePeriod) StartedAt() time.Time {
 	return p.StartTime
+}
+
+func (p PartialProductivePeriod) Equal(other Period) bool {
+	return p == other
 }
 
 func (ProductivePeriod) periodMarker() {}
@@ -580,6 +585,10 @@ func (p ProductivePeriod) Duration() time.Duration {
 	return p.StopTime.Sub(p.StartTime)
 }
 
+func (p ProductivePeriod) Equal(other Period) bool {
+	return p == other
+}
+
 func (NonProductivePeriod) periodMarker() {}
 
 // IsProductive returns whether some task is running during the period.
@@ -600,6 +609,10 @@ func (p NonProductivePeriod) StoppedAt() time.Time {
 // Duration returns the duration of the period.
 func (p NonProductivePeriod) Duration() time.Duration {
 	return p.StopTime.Sub(p.StartTime)
+}
+
+func (p NonProductivePeriod) Equal(other Period) bool {
+	return reflect.DeepEqual(p, other)
 }
 
 // TaskStats holds statistics for a given task.
@@ -632,6 +645,7 @@ func historyFromTaskEvents(evs []api.EventContainer[api.TaskEvent]) (*TaskHistor
 				prevStopTime := evs[i-1].At
 				period := NonProductivePeriod{
 					Reason:    startEv.StopReason,
+					Tags:      startEv.StopTags,
 					StartTime: prevStopTime,
 					StopTime:  startTime,
 				}

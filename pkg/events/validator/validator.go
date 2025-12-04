@@ -12,6 +12,7 @@ var (
 	ErrUnexpectedEvent      = errors.New("unexpected event")
 	ErrTaskNotRunning       = errors.New("task not running")
 	ErrUnexpectedStopReason = errors.New("unexpected stop reason")
+	ErrUnexpectedStopTags   = errors.New("unexpected stop tags")
 )
 
 // The Validator provides functionality for validating event sequences.
@@ -63,6 +64,10 @@ func (v *Validator) ValidateSequence(evs []events.TaskEvent, ev events.TaskEvent
 		case events.StartEvent:
 			if ev.StopReason != "" && !v.partialSequence {
 				return ErrUnexpectedStopReason
+			}
+
+			if len(ev.StopTags) > 0 && !v.partialSequence {
+				return ErrUnexpectedStopTags
 			}
 		case events.StopEvent:
 			if !v.partialSequence {

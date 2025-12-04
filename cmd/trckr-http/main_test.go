@@ -27,7 +27,13 @@ func TestGetTaskEventsWithinTimeRangeInexactFromExactTo(t *testing.T) {
 	}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -54,7 +60,13 @@ func TestGetTaskEventsWithinTimeRangeInexactFromExactToMultiAll(t *testing.T) {
 	}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -78,7 +90,13 @@ func TestGetTaskEventsWithinTimeRangeInexactFromExactToMultiFirstOnly(t *testing
 	expectedEvs := []api.EventContainer[api.TaskEvent]{dbTaskEvToAPITaskEv(evs[0])}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -102,7 +120,13 @@ func TestGetTaskEventsWithinTimeRangeInexactFromExactToMultiSecondOnly(t *testin
 	expectedEvs := []api.EventContainer[api.TaskEvent]{dbTaskEvToAPITaskEv(evs[1])}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -124,7 +148,13 @@ func TestGetTaskEventsWithinTimeRangeExactFromInexactTo(t *testing.T) {
 	}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -151,7 +181,13 @@ func TestGetTaskEventsWithinTimeRangeExactFromInexactToMultiAll(t *testing.T) {
 	}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -175,7 +211,13 @@ func TestGetTaskEventsWithinTimeRangeExactFromInexactToMultiFirst(t *testing.T) 
 	expectedEvs := []api.EventContainer[api.TaskEvent]{dbTaskEvToAPITaskEv(evs[0])}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -199,7 +241,13 @@ func TestGetTaskEventsWithinTimeRangeExactFromInexactToMultiSecond(t *testing.T)
 	expectedEvs := []api.EventContainer[api.TaskEvent]{dbTaskEvToAPITaskEv(evs[1])}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -221,7 +269,13 @@ func TestGetTaskEventsWithinTimeRangeInexactFromInexactTo(t *testing.T) {
 	}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -248,7 +302,13 @@ func TestGetTaskEventsWithinTimeRangeInexactFromInexactToMultiAll(t *testing.T) 
 	}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -272,7 +332,13 @@ func TestGetTaskEventsWithinTimeRangeInexactFromInexactToMultiFirst(t *testing.T
 	expectedEvs := []api.EventContainer[api.TaskEvent]{dbTaskEvToAPITaskEv(evs[0])}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -296,7 +362,13 @@ func TestGetTaskEventsWithinTimeRangeInexactFromInexactToMultiSecond(t *testing.
 	expectedEvs := []api.EventContainer[api.TaskEvent]{dbTaskEvToAPITaskEv(evs[1])}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -319,7 +391,13 @@ func TestGetTaskEventsWithinTimeRangeExactFromExactTo(t *testing.T) {
 	}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -347,7 +425,13 @@ func TestGetTaskEventsWithinTimeRangeExactFromExactToMultiAll(t *testing.T) {
 	}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -370,7 +454,13 @@ func TestGetTaskEventsWithinTimeRangeExactFromExactToMultiFirst(t *testing.T) {
 	expectedEvs := []api.EventContainer[api.TaskEvent]{dbTaskEvToAPITaskEv(evs[0])}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -394,7 +484,13 @@ func TestGetTaskEventsWithinTimeRangeExactFromExactToMultiSecond(t *testing.T) {
 	expectedEvs := []api.EventContainer[api.TaskEvent]{dbTaskEvToAPITaskEv(evs[1])}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -418,7 +514,13 @@ func TestGetEventsWithinTimeRangeSkipNonInitiatingFirst(t *testing.T) {
 	expectedEvs := []api.EventContainer[api.TaskEvent]{dbTaskEvToAPITaskEv(evs[1])}
 
 	filteredEvs := getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 
@@ -432,7 +534,13 @@ func TestGetEventsWithinTimeRangeSkipNonInitiatingFirst(t *testing.T) {
 	expectedEvs = []api.EventContainer[api.TaskEvent]{}
 
 	filteredEvs = getTaskEventsWithinTimeRange(evs, fromDate, toDate)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal = slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -452,7 +560,13 @@ func TestGetEventsForDaysPartialDivider(t *testing.T) {
 	expectedEvs := []api.EventContainer[api.TaskEvent]{dbTaskEvToAPITaskEv(evs[0])}
 
 	filteredEvs := getTaskEventsForDays(evs, numDays, dayDivider)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -478,7 +592,13 @@ func TestGetEventsForDaysDividerFirstDividerOnly(t *testing.T) {
 	expectedEvs := []api.EventContainer[api.TaskEvent]{}
 
 	filteredEvs := getTaskEventsForDays(evs, numDays, dayDivider)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 
@@ -489,7 +609,13 @@ func TestGetEventsForDaysDividerFirstDividerOnly(t *testing.T) {
 	}
 
 	filteredEvs = getTaskEventsForDays(evs, numDays, dayDivider)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal = slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -521,7 +647,13 @@ func TestGetEventsForDaysDividerFirst(t *testing.T) {
 	expectedEvs := []api.EventContainer[api.TaskEvent]{dbTaskEvToAPITaskEv(evs[2])}
 
 	filteredEvs := getTaskEventsForDays(evs, numDays, dayDivider)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 
@@ -532,7 +664,13 @@ func TestGetEventsForDaysDividerFirst(t *testing.T) {
 	}
 
 	filteredEvs = getTaskEventsForDays(evs, numDays, dayDivider)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal = slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -562,7 +700,13 @@ func TestGetEventsForDaysSwitchDividerLast(t *testing.T) {
 	}
 
 	filteredEvs := getTaskEventsForDays(evs, numDays, dayDivider)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -596,7 +740,13 @@ func TestGetEventsForDaysSwitchDividerMiddle(t *testing.T) {
 	expectedEvs := []api.EventContainer[api.TaskEvent]{dbTaskEvToAPITaskEv(evs[2])}
 
 	filteredEvs := getTaskEventsForDays(evs, numDays, dayDivider)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 
@@ -608,7 +758,13 @@ func TestGetEventsForDaysSwitchDividerMiddle(t *testing.T) {
 	}
 
 	filteredEvs = getTaskEventsForDays(evs, numDays, dayDivider)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal = slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }
@@ -628,7 +784,13 @@ func TestGetEventsForDaysUnknownDivider(t *testing.T) {
 	expectedEvs := []api.EventContainer[api.TaskEvent]{dbTaskEvToAPITaskEv(evs[0])}
 
 	filteredEvs := getTaskEventsForDays(evs, numDays, dayDivider)
-	if !slices.Equal(filteredEvs, expectedEvs) {
+	equal := slices.EqualFunc(filteredEvs, expectedEvs, func(filteredEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := filteredEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := filteredEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := filteredEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("unexpected value returned: should be %v but is %v", expectedEvs, filteredEvs)
 	}
 }

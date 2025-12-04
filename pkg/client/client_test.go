@@ -36,11 +36,20 @@ func TestHistoryFromTaskEventsPartialProductiveStart(t *testing.T) {
 		t.Fatalf("unexpected error when getting history from task events: %v", err)
 	}
 
-	if !slices.Equal(history.events, evs) {
+	equal := slices.EqualFunc(history.events, evs, func(historyEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := historyEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := historyEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := historyEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong events slice: should be %v but is %v", evs, history.events)
 	}
 
-	if !slices.Equal(history.periods, expectedPeriods) {
+	equal = slices.EqualFunc(history.periods, expectedPeriods, func(historyPeriod, expectedPeriod Period) bool {
+		return historyPeriod.Equal(expectedPeriod)
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong periods slice: should be %v but is %v", expectedPeriods, history.periods)
 	}
 }
@@ -73,11 +82,20 @@ func TestHistoryFromTaskEventsPartialProductiveSwitch(t *testing.T) {
 		t.Fatalf("unexpected error when getting history from task events: %v", err)
 	}
 
-	if !slices.Equal(history.events, evs) {
+	equal := slices.EqualFunc(history.events, evs, func(historyEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := historyEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := historyEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := historyEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong events slice: should be %v but is %v", evs, history.events)
 	}
 
-	if !slices.Equal(history.periods, expectedPeriods) {
+	equal = slices.EqualFunc(history.periods, expectedPeriods, func(historyPeriod, expectedPeriod Period) bool {
+		return historyPeriod.Equal(expectedPeriod)
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong periods slice: should be %v but is %v", expectedPeriods, history.periods)
 	}
 }
@@ -119,11 +137,20 @@ func TestHistoryFromTaskEventsProductiveStart(t *testing.T) {
 		t.Fatalf("unexpected error when getting history from task events: %v", err)
 	}
 
-	if !slices.Equal(history.events, evs) {
+	equal := slices.EqualFunc(history.events, evs, func(historyEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := historyEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := historyEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := historyEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong events slice: should be %v but is %v", evs, history.events)
 	}
 
-	if !slices.Equal(history.periods, expectedPeriods) {
+	equal = slices.EqualFunc(history.periods, expectedPeriods, func(historyPeriod, expectedPeriod Period) bool {
+		return historyPeriod.Equal(expectedPeriod)
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong periods slice: should be %v but is %v", expectedPeriods, history.periods)
 	}
 }
@@ -166,11 +193,20 @@ func TestHistoryFromTaskEventsProductiveSwitch(t *testing.T) {
 		t.Fatalf("unexpected error when getting history from task events: %v", err)
 	}
 
-	if !slices.Equal(history.events, evs) {
+	equal := slices.EqualFunc(history.events, evs, func(historyEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := historyEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := historyEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := historyEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong events slice: should be %v but is %v", evs, history.events)
 	}
 
-	if !slices.Equal(history.periods, expectedPeriods) {
+	equal = slices.EqualFunc(history.periods, expectedPeriods, func(historyPeriod, expectedPeriod Period) bool {
+		return historyPeriod.Equal(expectedPeriod)
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong periods slice: should be %v but is %v", expectedPeriods, history.periods)
 	}
 }
@@ -231,11 +267,20 @@ func TestHistoryFromTaskEventsProductiveStartNonProductive(t *testing.T) {
 		t.Fatalf("unexpected error when getting history from task events: %v", err)
 	}
 
-	if !slices.Equal(history.events, evs) {
+	equal := slices.EqualFunc(history.events, evs, func(historyEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := historyEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := historyEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := historyEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong events slice: should be %v but is %v", evs, history.events)
 	}
 
-	if !slices.Equal(history.periods, expectedPeriods) {
+	equal = slices.EqualFunc(history.periods, expectedPeriods, func(historyPeriod, expectedPeriod Period) bool {
+		return historyPeriod.Equal(expectedPeriod)
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong periods slice: should be %v but is %v", expectedPeriods, history.periods)
 	}
 }
@@ -297,11 +342,20 @@ func TestHistoryFromTaskEventsProductiveSwitchNonProductive(t *testing.T) {
 		t.Fatalf("unexpected error when getting history from task events: %v", err)
 	}
 
-	if !slices.Equal(history.events, evs) {
+	equal := slices.EqualFunc(history.events, evs, func(historyEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := historyEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := historyEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := historyEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong events slice: should be %v but is %v", evs, history.events)
 	}
 
-	if !slices.Equal(history.periods, expectedPeriods) {
+	equal = slices.EqualFunc(history.periods, expectedPeriods, func(historyPeriod, expectedPeriod Period) bool {
+		return historyPeriod.Equal(expectedPeriod)
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong periods slice: should be %v but is %v", expectedPeriods, history.periods)
 	}
 }
@@ -348,11 +402,20 @@ func TestHistoryFromTaskEventsProductiveStartPartialProductiveSwitch(t *testing.
 		t.Fatalf("unexpected error when getting history from task events: %v", err)
 	}
 
-	if !slices.Equal(history.events, evs) {
+	equal := slices.EqualFunc(history.events, evs, func(historyEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := historyEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := historyEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := historyEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong events slice: should be %v but is %v", evs, history.events)
 	}
 
-	if !slices.Equal(history.periods, expectedPeriods) {
+	equal = slices.EqualFunc(history.periods, expectedPeriods, func(historyPeriod, expectedPeriod Period) bool {
+		return historyPeriod.Equal(expectedPeriod)
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong periods slice: should be %v but is %v", expectedPeriods, history.periods)
 	}
 }
@@ -400,11 +463,20 @@ func TestHistoryFromTaskEventsProductiveSwitchProductiveSwitch(t *testing.T) {
 		t.Fatalf("unexpected error when getting history from task events: %v", err)
 	}
 
-	if !slices.Equal(history.events, evs) {
+	equal := slices.EqualFunc(history.events, evs, func(historyEv, expectedEv api.EventContainer[api.TaskEvent]) bool {
+		metaEqual := historyEv.EventContainerMeta == expectedEv.EventContainerMeta
+		taskEventMetaEqual := historyEv.Event.TaskEventMeta == expectedEv.Event.TaskEventMeta
+		evEqual := historyEv.Event.TaskEvent.Equal(expectedEv.Event.TaskEvent)
+		return metaEqual && taskEventMetaEqual && evEqual
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong events slice: should be %v but is %v", evs, history.events)
 	}
 
-	if !slices.Equal(history.periods, expectedPeriods) {
+	equal = slices.EqualFunc(history.periods, expectedPeriods, func(historyPeriod, expectedPeriod Period) bool {
+		return historyPeriod.Equal(expectedPeriod)
+	})
+	if !equal {
 		t.Fatalf("returned history has wrong periods slice: should be %v but is %v", expectedPeriods, history.periods)
 	}
 }
@@ -432,7 +504,10 @@ func TestHistorySplitByTaskPartialProductiveDividerOnly(t *testing.T) {
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory, history)
 		}
 	}
@@ -462,7 +537,10 @@ func TestHistorySplitByTaskProductiveDividerOnly(t *testing.T) {
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory, history)
 		}
 	}
@@ -504,7 +582,10 @@ func TestHistorySplitByTaskProductiveDividerProductive(t *testing.T) {
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory.periods, history.periods)
 		}
 	}
@@ -546,7 +627,10 @@ func TestHistorySplitByTaskProductiveDividerProductiveDivider(t *testing.T) {
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory.periods, history.periods)
 		}
 	}
@@ -592,7 +676,10 @@ func TestHistorySplitByTaskProductiveDividerNonProductiveProductive(t *testing.T
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory.periods, history.periods)
 		}
 	}
@@ -638,7 +725,10 @@ func TestHistorySplitByTaskProductiveDividerNonProductiveProductiveDivider(t *te
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory.periods, history.periods)
 		}
 	}
@@ -670,7 +760,10 @@ func TestHistorySplitByDayPartialProductiveOnly(t *testing.T) {
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory.periods, history.periods)
 		}
 	}
@@ -703,7 +796,10 @@ func TestHistorySplitByDayProductiveOnly(t *testing.T) {
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory.periods, history.periods)
 		}
 	}
@@ -740,7 +836,10 @@ func TestHistorySplitByDayProductiveProductive(t *testing.T) {
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory.periods, history.periods)
 		}
 	}
@@ -780,7 +879,10 @@ func TestHistorySplitByDayProductiveProductiveDiffDay(t *testing.T) {
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory.periods, history.periods)
 		}
 	}
@@ -821,7 +923,10 @@ func TestHistorySplitByDayProductiveNonProductive(t *testing.T) {
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory.periods, history.periods)
 		}
 	}
@@ -865,7 +970,10 @@ func TestHistorySplitByDayProductiveNonProductiveDiffDay(t *testing.T) {
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory.periods, history.periods)
 		}
 	}
@@ -901,7 +1009,10 @@ func TestHistorySplitByDayProductivePartialProductive(t *testing.T) {
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory.periods, history.periods)
 		}
 	}
@@ -940,7 +1051,10 @@ func TestHistorySplitByDayProductivePartialProductiveDiffDay(t *testing.T) {
 	}
 	for i, history := range histories {
 		expectedHistory := expectedHistories[i]
-		if !slices.Equal(expectedHistory.periods, history.periods) {
+		equal := slices.EqualFunc(history.periods, expectedHistory.periods, func(historyPeriod, expectedPeriod Period) bool {
+			return historyPeriod.Equal(expectedPeriod)
+		})
+		if !equal {
 			t.Fatalf("unexpected value for periods in history at index %d: should be %v but is %v", i, expectedHistory.periods, history.periods)
 		}
 	}

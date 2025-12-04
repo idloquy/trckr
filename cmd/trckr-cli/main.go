@@ -18,11 +18,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/idloquy/trckr/cmd/trckr-cli/config"
-	"github.com/idloquy/trckr/cmd/trckr-cli/util"
+	cliUtil "github.com/idloquy/trckr/cmd/trckr-cli/util"
 	"github.com/idloquy/trckr/pkg/api"
 	"github.com/idloquy/trckr/pkg/client"
 	"github.com/idloquy/trckr/pkg/events"
 	"github.com/idloquy/trckr/pkg/tasks"
+	"github.com/idloquy/trckr/pkg/util"
 )
 
 var Version string = "0.0.0"
@@ -38,6 +39,7 @@ type TaskDependentCmd interface {
 type StartTaskCmd struct {
 	TaskName   string `arg:"positional,required"`
 	StopReason string `arg:"-s,--stop-reason"`
+	StopTags   string `arg:"-t,--stop-tags"`
 }
 
 func (cmd *StartTaskCmd) Tasks() []string {
@@ -81,14 +83,15 @@ type DeleteTaskCmd struct {
 type FixCmd struct {
 	Task       *string `arg:"--task" help:"specify the new value for the task (ignored for switch events)"`
 	StopReason *string `arg:"--stop-reason" help:"specify the new value for the stop reason (ignored for non-start events)"`
+	StopTags   *string `arg:"--stop-tags" help:"specify the new value for the stop tags (ignored for non-start events)`
 	NewTask    *string `arg:"--new-task" help:"specify the new value for the new task (ignored for non-switch events)"`
 }
 
 func (cmd *FixCmd) AnyOptionSpecified() bool {
-	return cmd.Task != nil || cmd.StopReason != nil || cmd.NewTask != nil
+	return cmd.Task != nil || cmd.StopReason != nil || cmd.StopTags != nil || cmd.NewTask != nil
 }
 
-type UndoCmd struct {}
+type UndoCmd struct{}
 
 type ListTasksCmd struct {
 	Running bool `arg:"-r,--running" help:"only display the running task"`
@@ -125,7 +128,7 @@ type Args struct {
 	Watch      *WatchCmd      `arg:"subcommand:watch" help:"watch for task modifications"`
 	// NOTE: We're using this instead of goarg's built-in version reporting
 	// feature in order to prevent the version from being printed in help messages.
-	Version    bool           `arg:"--version" help:"display the version"`
+	Version bool `arg:"--version" help:"display the version"`
 }
 
 type SubcommandError struct {
@@ -180,7 +183,7 @@ func validateGenericArgs(parser *arg.Parser, args Args) error {
 }
 
 func parseURLForCommand(rawURL string) (*url.URL, error) {
-	parsedURL, err := util.ParseWithScheme(rawURL, "http")
+	parsedURL, err := cliUtil.ParseWithScheme(rawURL, "http")
 
 	if err != nil {
 		return parsedURL, err
@@ -203,12 +206,12 @@ type LoggableTaskEvent struct {
 
 func (ev *LoggableTaskEvent) DescribeValues() string {
 	fields := ev.DescribeValuesFields()
-	return util.MapToString(fields)
+	return cliUtil.MapToString(fields)
 }
 
 func (ev *LoggableTaskEvent) Describe() string {
 	fields := ev.DescribeFields()
-	return util.MapToString(fields)
+	return cliUtil.MapToString(fields)
 }
 
 func (ev *LoggableTaskEvent) DescribeValuesFields() map[string]any {
@@ -217,6 +220,7 @@ func (ev *LoggableTaskEvent) DescribeValuesFields() map[string]any {
 		return map[string]any{
 			"task":        taskEv.Task,
 			"stop_reason": taskEv.StopReason,
+			"stop_tags":   taskEv.StopTags,
 		}
 	case events.StopEvent:
 		return map[string]any{
@@ -248,9 +252,21 @@ func (ev *LoggableTaskEvent) DescribeFields() map[string]any {
 	return fields
 }
 
+func formatStringArray(stopTags []string, delimiter string) string {
+	var joinedQuotedTags string
+	for i, tag := range stopTags {
+		if i < len(stopTags)-1 {
+			joinedQuotedTags += fmt.Sprintf("%s%s", strconv.Quote(tag), delimiter)
+		} else {
+			joinedQuotedTags += strconv.Quote(tag)
+		}
+	}
+	return joinedQuotedTags
+}
+
 func formatCrossDayPeriod(per client.FullyBoundedPeriod) string {
-	startDayStart := util.GetStartOfDay(per.StartedAt())
-	stopDayStart := util.GetStartOfDay(per.StoppedAt())
+	startDayStart := cliUtil.GetStartOfDay(per.StartedAt())
+	stopDayStart := cliUtil.GetStartOfDay(per.StoppedAt())
 
 	if startDayStart.Equal(stopDayStart) {
 		panic("period is not a cross-day period")
@@ -262,18 +278,18 @@ func formatCrossDayPeriod(per client.FullyBoundedPeriod) string {
 	switch per := per.(type) {
 	case client.ProductivePeriod:
 		head = fmt.Sprintf("%s %s-\n", per.Task, per.StartTime.In(time.Local).Round(time.Minute).Format("15:04"))
-		foot = fmt.Sprintf("%s -%s (%s)", per.Task, per.StopTime.In(time.Local).Round(time.Minute).Format("15:04"), util.FormatDuration(per.Duration()))
+		foot = fmt.Sprintf("%s -%s (%s)", per.Task, per.StopTime.In(time.Local).Round(time.Minute).Format("15:04"), cliUtil.FormatDuration(per.Duration()))
 	case client.NonProductivePeriod:
 		nextDayStart := startDayStart.Add(time.Hour * 24)
 		startDayDuration := nextDayStart.Sub(per.StartTime)
 		stopDayDuration := per.StopTime.Sub(nextDayStart)
 
 		if per.Reason != "" {
-			head = fmt.Sprintf("%s %s\n", util.FormatDuration(startDayDuration), per.Reason)
-			foot = fmt.Sprintf("%s %s", util.FormatDuration(stopDayDuration), per.Reason)
+			head = fmt.Sprintf("%s %s\n", cliUtil.FormatDuration(startDayDuration), per.Reason)
+			foot = fmt.Sprintf("%s %s", cliUtil.FormatDuration(stopDayDuration), per.Reason)
 		} else {
-			head = fmt.Sprintf("%s\n", util.FormatDuration(startDayDuration))
-			foot = fmt.Sprintf("%s", util.FormatDuration(stopDayDuration))
+			head = fmt.Sprintf("%s\n", cliUtil.FormatDuration(startDayDuration))
+			foot = fmt.Sprintf("%s", cliUtil.FormatDuration(stopDayDuration))
 		}
 	default:
 		panic(fmt.Sprintf("handling for fully bounded period type %s not implemented", reflect.TypeOf(per).Name()))
@@ -315,12 +331,13 @@ func formatPeriod(per client.Period, raw bool) string {
 			if !startTimeDayStart.Equal(stopTimeDayStart) {
 				s = formatCrossDayPeriod(per)
 			} else {
-				s = fmt.Sprintf("%s %s-%s (%s)", per.Task, per.StartTime.Format("15:04"), per.StopTime.Format("15:04"), util.FormatDuration(per.Duration()))
+				s = fmt.Sprintf("%s %s-%s (%s)", per.Task, per.StartTime.Format("15:04"), per.StopTime.Format("15:04"), cliUtil.FormatDuration(per.Duration()))
 			}
 		} else {
 			s = fmt.Sprintf("%s %d %d", per.Task, per.StartTime.Unix(), per.StopTime.Unix())
 		}
 	case client.NonProductivePeriod:
+		formattedTags := formatStringArray(per.Tags, " ")
 		if !raw {
 			per.StartTime = per.StartTime.In(time.Local).Round(time.Minute)
 			per.StopTime = per.StopTime.In(time.Local).Round(time.Minute)
@@ -331,16 +348,24 @@ func formatPeriod(per client.Period, raw bool) string {
 			if !startTimeDayStart.Equal(stopTimeDayStart) {
 				s = formatCrossDayPeriod(per)
 			} else {
-				s = util.FormatDuration(per.Duration())
+				s = cliUtil.FormatDuration(per.Duration())
 				if per.Reason != "" {
 					s += fmt.Sprintf(" %s", per.Reason)
 				}
 			}
+
+			if len(per.Tags) > 0 {
+				s += fmt.Sprintf(" (tags: %s)", formattedTags)
+			}
 		} else {
 			if per.Reason != "" {
-				s = fmt.Sprintf("- %s", per.Reason)
+				s = fmt.Sprintf("- %s", strconv.Quote(per.Reason))
 			} else {
 				s = fmt.Sprintf("-")
+			}
+
+			if len(per.Tags) > 0 {
+				s += fmt.Sprintf(" | %s", strconv.Quote(formattedTags))
 			}
 		}
 	default:
@@ -439,8 +464,12 @@ func main() {
 
 	switch {
 	case args.StartTask != nil:
-		log.WithFields(log.Fields{"task": args.StartTask.TaskName, "stop_reason": args.StartTask.StopReason}).Debug("starting task...")
-		if err := c.StartTask(args.StartTask.TaskName, args.StartTask.StopReason); err != nil {
+		log.WithFields(log.Fields{"task": args.StartTask.TaskName, "stop_reason": args.StartTask.StopReason, "stop_tags": args.StartTask.StopTags}).Debug("starting task...")
+		stopTags, err := util.ParseStringArray(args.StartTask.StopTags)
+		if err != nil {
+			parser.FailSubcommand("malformed --stop-tags argument: must be a comma-separated list of tags, where each item is optionally surrounded by quotes", parser.SubcommandNames()[0])
+		}
+		if err := c.StartTask(args.StartTask.TaskName, args.StartTask.StopReason, stopTags); err != nil {
 			if !args.Quiet {
 				fmt.Fprintln(os.Stderr, "error: failed to start task:", err)
 			}
@@ -719,7 +748,7 @@ func main() {
 				fmt.Println()
 				for _, stats := range stats {
 					if !args.History.Raw {
-						fmt.Printf("%s = %s\n", stats.Task, util.FormatDuration(stats.Duration))
+						fmt.Printf("%s = %s\n", stats.Task, cliUtil.FormatDuration(stats.Duration))
 					} else {
 						fmt.Printf("%s = %d\n", stats.Task, uint64(stats.Duration.Seconds()))
 					}
@@ -790,8 +819,8 @@ func main() {
 
 		switch transientEv := latestEv.Event.TaskEvent.(type) {
 		case events.StartEvent:
-			if args.Fix.Task == nil && args.Fix.StopReason == nil {
-				parser.Fail("no changes specified for start event: one of --task or --stop-reason is required")
+			if args.Fix.Task == nil && args.Fix.StopReason == nil && args.Fix.StopTags == nil {
+				parser.Fail("no changes specified for start event: one of --task, --stop-reason or --stop-tags is required")
 			}
 
 			if args.Fix.Task != nil {
@@ -807,6 +836,13 @@ func main() {
 				newStopReason := *args.Fix.StopReason
 
 				transientEv.StopReason = newStopReason
+			}
+			if args.Fix.StopTags != nil {
+				newStopTags, err := util.ParseStringArray(*args.Fix.StopTags)
+				if err != nil {
+					parser.FailSubcommand("malformed --stop-tags argument: must be a comma-separated list of tags, where each item is optionally surrounded by quotes", parser.SubcommandNames()[0])
+				}
+				transientEv.StopTags = newStopTags
 			}
 
 			updatedEv.TaskEvent = transientEv
@@ -831,7 +867,7 @@ func main() {
 		default:
 			panic(fmt.Sprintf("handling for %s events not implemented", transientEv.Name()))
 		}
-		if latestEv.Event == updatedEv {
+		if latestEv.Event.Equal(updatedEv) {
 			if !args.Quiet {
 				fmt.Println("latest event already has the specified values")
 			}
@@ -888,11 +924,12 @@ func main() {
 
 				switch ev := apiEv.TaskEvent.(type) {
 				case events.StartEvent:
+					stopTags := formatStringArray(ev.StopTags, ",")
 					if !args.Quiet {
-						fmt.Printf("task started: id=%d task=%s stop_reason=%s\n", apiEv.ID, strconv.Quote(ev.Task), strconv.Quote(ev.StopReason))
+						fmt.Printf("task started: id=%d task=%s stop_reason=%s\n stop_tags=[%s]", apiEv.ID, strconv.Quote(ev.Task), strconv.Quote(ev.StopReason), stopTags)
 					}
 					if args.Watch.Cmd != "" {
-						err = exec.Command(args.Watch.Cmd, "start", evID, ev.Task, ev.StopReason).Run()
+						err = exec.Command(args.Watch.Cmd, "start", evID, ev.Task, ev.StopReason, stopTags).Run()
 					}
 				case events.StopEvent:
 					if !args.Quiet {
