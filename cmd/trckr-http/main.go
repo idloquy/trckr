@@ -671,9 +671,6 @@ func (handler *Handler) BadRequest(c *gin.Context) {
 func (handler *Handler) MediaTypeHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		supportedFormat := "application/json"
-		if c.Request.Method == http.MethodPatch {
-			supportedFormat = "application/merge-patch+json"
-		}
 		negotiatedFormat := c.NegotiateFormat(supportedFormat)
 		if negotiatedFormat != supportedFormat {
 			res := api.NewErrorResponse(fmt.Sprintf("only '%s' media type supported", supportedFormat))
@@ -683,6 +680,9 @@ func (handler *Handler) MediaTypeHandler() gin.HandlerFunc {
 		}
 
 		acceptedFormat := "application/json"
+		if c.Request.Method == http.MethodPatch {
+			acceptedFormat = "application/merge-patch+json"
+		}
 		if c.ContentType() != acceptedFormat && slices.Contains([]string{http.MethodPost, http.MethodPut, http.MethodPatch}, c.Request.Method) {
 			res := api.NewErrorResponse(fmt.Sprintf("only '%s' content type supported", acceptedFormat))
 			c.JSON(http.StatusUnsupportedMediaType, res)
