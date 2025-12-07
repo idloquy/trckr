@@ -19,7 +19,6 @@ func NewStringArray(arr []string) *StringArray {
 
 // Scan parses value as a string array.
 func (a *StringArray) Scan(value any) error {
-	fmt.Println("stringarray scanning val:", value)
 	s, ok := value.(string)
 	if !ok {
 		return fmt.Errorf("failed to unmarshal StringArray value of unexpected type: %s", value)
@@ -28,12 +27,9 @@ func (a *StringArray) Scan(value any) error {
 	var err error
 	a.arr, err = util.ParseStringArray(s)
 	if err != nil {
-		fmt.Println("stringarray returning err")
 		return fmt.Errorf("failed to unmarshal StringArray value with incorrect format: %s", s)
 	}
 
-	fmt.Println("stringarray returning nil")
-	fmt.Println("stringarray:", a.arr)
 	return nil
 }
 
