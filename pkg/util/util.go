@@ -13,7 +13,6 @@ func ParseStringArray(s string) ([]string, error) {
 	matches := re.FindAllString(s, -1)
 
 	for i, match := range matches {
-		fmt.Println("normalizing match:", match)
 		// len(match) > 1 handles a corner case where the closing quote
 		// is placed after the comma.
 		if strings.HasPrefix(match, "\"") && strings.HasSuffix(match, "\"") && len(match) > 1 {
