@@ -14,12 +14,25 @@ import (
 )
 
 var (
-	ErrUnknownResponseStatus     = errors.New("unknown response status")
-	ErrUnexpectedResponseStatus  = errors.New("unexpected response status")
-	ErrUnknownEventType          = errors.New("unknown event type")
-	ErrUnknownTaskEventType      = errors.New("unknown task event type")
-	ErrUnknownOperationEventType = errors.New("unknown operation event type")
-	ErrUnexpectedEventType       = errors.New("unexpected event type")
+	ErrUnknownResponseStatus    = errors.New("unknown response status")
+	ErrUnexpectedResponseStatus = errors.New("unexpected response status")
+
+	ErrUnknownEventType                     = errors.New("unknown event type")
+	ErrUnknownEventTypeName                 = errors.New("unknown event type name")
+	ErrMissingEventTypeDiscriminator        = errors.New("missing event type discriminator")
+	ErrMismatchingEventTypeForEventTypeName = errors.New("event type doesn't match event type name")
+
+	ErrUnknownTaskEventType                         = errors.New("unknown task event type")
+	ErrUnknownTaskEventTypeName                     = errors.New("unknown task event type name")
+	ErrMissingTaskEventTypeDiscriminator            = errors.New("missing task event type discriminator")
+	ErrMismatchingTaskEventTypeForTaskEventTypeName = errors.New("task event type doesn't match task event type name")
+
+	ErrUnknownOperationEventType                              = errors.New("unknown operation event type")
+	ErrUnknownOperationEventTypeName                          = errors.New("unknown operation event type name")
+	ErrMissingOperationEventTypeDiscriminator                 = errors.New("missing operation event type discriminator")
+	ErrMismatchingOperationEventTypeForOperationEventTypeName = errors.New("operation event type doesn't match operation event type name")
+
+	ErrUnexpectedEventType = errors.New("unexpected event type")
 )
 
 // ResponseStatus represents response statuses.
@@ -293,18 +306,87 @@ func NewErrorResponse(msg string) ResponseContainer {
 type EventType uint
 
 const (
-	EventTypeTask = iota
+	EventTypeTask EventType = iota
 	EventTypeOperation
 )
 
-func eventTypeFromEvent(ev events.Event) EventType {
+const (
+	EventTypeNameTask      = "task"
+	EventTypeNameOperation = "operation"
+)
+
+type transientEventContainerMeta struct {
+	EventType     *EventType `json:"event_type"`
+	EventTypeName *string    `json:"event_type_name"`
+}
+
+func transientEventContainerMetaFromEvent(ev events.Event) transientEventContainerMeta {
+	var evType EventType
+	var evTypeName string
+
 	switch ev := ev.(type) {
 	case events.TaskEvent:
-		return EventTypeTask
+		evType = EventTypeTask
+		evTypeName = EventTypeNameTask
 	case events.OperationEvent:
-		return EventTypeOperation
+		evType = EventTypeOperation
+		evTypeName = EventTypeNameOperation
 	default:
 		panic(fmt.Sprintf("handling for %s events not implemented", ev.Kind()))
+	}
+
+	return transientEventContainerMeta{
+		EventType:     &evType,
+		EventTypeName: &evTypeName,
+	}
+}
+
+func (meta transientEventContainerMeta) validate() error {
+	if meta.EventType == nil && meta.EventTypeName == nil {
+		return ErrMissingEventTypeDiscriminator
+	}
+
+	if meta.EventType != nil {
+		if *meta.EventType != EventTypeTask &&
+			*meta.EventType != EventTypeOperation {
+			return ErrUnknownEventType
+		}
+	}
+
+	if meta.EventTypeName != nil {
+		if *meta.EventTypeName != EventTypeNameTask &&
+			*meta.EventTypeName != EventTypeNameOperation {
+			return ErrUnknownEventTypeName
+		}
+	}
+
+	if meta.EventType != nil && meta.EventTypeName != nil {
+		if (*meta.EventType == EventTypeTask && *meta.EventTypeName != EventTypeNameTask) ||
+			(*meta.EventType == EventTypeOperation && *meta.EventTypeName != EventTypeNameOperation) {
+			return ErrMismatchingEventTypeForEventTypeName
+		}
+	}
+
+	return nil
+}
+
+// getTypeDiscriminator returns the type discriminator from the EventTypeName field,
+// if non-null, or from the EventType field otherwise. It is meant to be called
+// after unmarshaling.
+//
+// NOTE: meta must have been verified to be valid when calling this.
+func (meta transientEventContainerMeta) getTypeDiscriminator() string {
+	if meta.EventTypeName != nil {
+		return *meta.EventTypeName
+	}
+
+	switch *meta.EventType {
+	case EventTypeTask:
+		return EventTypeNameTask
+	case EventTypeOperation:
+		return EventTypeNameOperation
+	default:
+		panic("expected valid meta")
 	}
 }
 
@@ -340,18 +422,18 @@ type EventContainer[T Event] EventContainerBase[T]
 
 func (container EventContainer[T]) MarshalJSON() ([]byte, error) {
 	transientContainer := struct {
-		EventType EventType `json:"event_type"`
+		transientEventContainerMeta
 		EventContainerBase[T]
 	}{
-		EventType:          eventTypeFromEvent(container.Event),
-		EventContainerBase: EventContainerBase[T](container),
+		transientEventContainerMeta: transientEventContainerMetaFromEvent(container.Event),
+		EventContainerBase:          EventContainerBase[T](container),
 	}
 	return json.Marshal(transientContainer)
 }
 
 func (container *EventContainer[T]) UnmarshalJSON(data []byte) error {
 	var transientContainer struct {
-		EventType EventType `json:"event_type"`
+		transientEventContainerMeta
 		EventContainerMeta
 		Event json.RawMessage `json:"event"`
 	}
@@ -360,29 +442,34 @@ func (container *EventContainer[T]) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if err := transientContainer.transientEventContainerMeta.validate(); err != nil {
+		return err
+	}
+
 	var err error
 	var ev Event = container.Event
 
+	transientEvType := transientContainer.getTypeDiscriminator()
 	switch ev := ev.(type) {
 	case TaskEvent:
-		if transientContainer.EventType != EventTypeTask {
-			return fmt.Errorf("%w: expected %v and got %v", ErrUnexpectedEventType, EventTypeTask, transientContainer.EventType)
+		if transientEvType != EventTypeNameTask {
+			return fmt.Errorf("%w: expected %v and got %v", ErrUnexpectedEventType, EventTypeNameTask, transientEvType)
 		}
 		container.Event, err = unmarshal[T](transientContainer.Event)
 	case OperationEvent:
-		if transientContainer.EventType != EventTypeOperation {
-			return fmt.Errorf("%w: expected %v and got %v", ErrUnexpectedEventType, EventTypeOperation, transientContainer.EventType)
+		if transientEvType != EventTypeNameOperation {
+			return fmt.Errorf("%w: expected %v and got %v", ErrUnexpectedEventType, EventTypeNameOperation, transientEvType)
 		}
 		container.Event, err = unmarshal[T](transientContainer.Event)
 	case DynamicEvent:
 		var unmarshaledEv Event
-		switch transientContainer.EventType {
-		case EventTypeTask:
+		switch transientEvType {
+		case EventTypeNameTask:
 			unmarshaledEv, err = unmarshal[TaskEvent](transientContainer.Event)
-		case EventTypeOperation:
+		case EventTypeNameOperation:
 			unmarshaledEv, err = unmarshal[OperationEvent](transientContainer.Event)
 		default:
-			return fmt.Errorf("%w: %v", ErrUnknownEventType, transientContainer.EventType)
+			return fmt.Errorf("%w: %v", ErrUnknownEventType, transientEvType)
 		}
 		container.Event = any(DynamicEvent{unmarshaledEv}).(T)
 	default:
@@ -430,48 +517,54 @@ func NewRequestEventContainer[T RequestEvent](ev T) (RequestEventContainer[T], e
 
 func (container RequestEventContainer[T]) MarshalJSON() ([]byte, error) {
 	transientContainer := struct {
-		EventType EventType `json:"event_type"`
+		transientEventContainerMeta
 		RequestEventContainerBase[T]
 	}{
-		EventType:                 eventTypeFromEvent(container.Event),
-		RequestEventContainerBase: RequestEventContainerBase[T](container),
+		transientEventContainerMeta: transientEventContainerMetaFromEvent(container.Event),
+		RequestEventContainerBase:   RequestEventContainerBase[T](container),
 	}
 	return json.Marshal(transientContainer)
 }
 
 func (container *RequestEventContainer[T]) UnmarshalJSON(data []byte) error {
 	var transientContainer struct {
-		EventType EventType       `json:"event_type"`
-		Event     json.RawMessage `json:"event"`
+		transientEventContainerMeta
+		Event json.RawMessage `json:"event"`
 	}
 
 	if err := json.Unmarshal(data, &transientContainer); err != nil {
 		return err
 	}
 
+	if err := transientContainer.transientEventContainerMeta.validate(); err != nil {
+		return err
+	}
+
 	var err error
 
 	var ev RequestEvent = container.Event
+	transientEvType := transientContainer.getTypeDiscriminator()
+
 	switch ev := ev.(type) {
 	case RequestTaskEvent:
-		if transientContainer.EventType != EventTypeTask {
-			return fmt.Errorf("%w: expected %v and got %v", ErrUnexpectedEventType, EventTypeTask, transientContainer.EventType)
+		if transientEvType != EventTypeNameTask {
+			return fmt.Errorf("%w: expected %v and got %v", ErrUnexpectedEventType, EventTypeNameTask, transientEvType)
 		}
 		container.Event, err = unmarshal[T](transientContainer.Event)
 	case RequestOperationEvent:
-		if transientContainer.EventType != EventTypeOperation {
-			return fmt.Errorf("%w: expected %v and got %v", ErrUnexpectedEventType, EventTypeOperation, transientContainer.EventType)
+		if transientEvType != EventTypeNameOperation {
+			return fmt.Errorf("%w: expected %v and got %v", ErrUnexpectedEventType, EventTypeNameOperation, transientEvType)
 		}
 		container.Event, err = unmarshal[T](transientContainer.Event)
 	case RequestDynamicEvent:
 		var unmarshaledEv RequestEvent
-		switch transientContainer.EventType {
-		case EventTypeTask:
+		switch transientEvType {
+		case EventTypeNameTask:
 			unmarshaledEv, err = unmarshal[RequestTaskEvent](transientContainer.Event)
-		case EventTypeOperation:
+		case EventTypeNameOperation:
 			unmarshaledEv, err = unmarshal[RequestOperationEvent](transientContainer.Event)
 		default:
-			return fmt.Errorf("%w: %v", ErrUnknownEventType, transientContainer.EventType)
+			return fmt.Errorf("%w: %v", ErrUnknownEventType, transientEvType)
 		}
 		container.Event = any(RequestDynamicEvent{unmarshaledEv}).(T)
 	default:
@@ -490,16 +583,92 @@ const (
 	TaskEventTypeSwitch
 )
 
-func taskEventTypeFromEvent(ev events.TaskEvent) TaskEventType {
+const (
+	TaskEventTypeNameStart  = "start"
+	TaskEventTypeNameStop   = "stop"
+	TaskEventTypeNameSwitch = "switch"
+)
+
+type transientTaskEventMeta struct {
+	TaskEventType     *TaskEventType `json:"task_event_type"`
+	TaskEventTypeName *string        `json:"task_event_type_name"`
+}
+
+func transientTaskEventMetaFromTaskEvent(ev events.TaskEvent) transientTaskEventMeta {
+	var taskEvType TaskEventType
+	var taskEvTypeName string
+
 	switch ev := ev.(type) {
 	case events.StartEvent:
-		return TaskEventTypeStart
+		taskEvType = TaskEventTypeStart
+		taskEvTypeName = TaskEventTypeNameStart
 	case events.StopEvent:
-		return TaskEventTypeStop
+		taskEvType = TaskEventTypeStop
+		taskEvTypeName = TaskEventTypeNameStop
 	case events.SwitchEvent:
-		return TaskEventTypeSwitch
+		taskEvType = TaskEventTypeSwitch
+		taskEvTypeName = TaskEventTypeNameSwitch
 	default:
 		panic(fmt.Sprintf("handling for %s events not implemented", ev.Name()))
+	}
+
+	return transientTaskEventMeta{
+		TaskEventType:     &taskEvType,
+		TaskEventTypeName: &taskEvTypeName,
+	}
+}
+
+func (meta transientTaskEventMeta) validate() error {
+	if meta.TaskEventType == nil && meta.TaskEventTypeName == nil {
+		return ErrMissingTaskEventTypeDiscriminator
+	}
+
+	if meta.TaskEventType != nil {
+		if *meta.TaskEventType != TaskEventTypeStart &&
+			*meta.TaskEventType != TaskEventTypeStop &&
+			*meta.TaskEventType != TaskEventTypeSwitch {
+			return ErrUnknownTaskEventType
+		}
+	}
+
+	if meta.TaskEventTypeName != nil {
+		if *meta.TaskEventTypeName != TaskEventTypeNameStart &&
+			*meta.TaskEventTypeName != TaskEventTypeNameStop &&
+			*meta.TaskEventTypeName != TaskEventTypeNameSwitch {
+			return ErrUnknownTaskEventTypeName
+		}
+	}
+
+	if meta.TaskEventType != nil && meta.TaskEventTypeName != nil {
+		if (*meta.TaskEventType == TaskEventTypeStart && *meta.TaskEventTypeName != TaskEventTypeNameStart) ||
+			(*meta.TaskEventType == TaskEventTypeStop && *meta.TaskEventTypeName != TaskEventTypeNameStop) ||
+			(*meta.TaskEventType == TaskEventTypeSwitch && *meta.TaskEventTypeName != TaskEventTypeNameSwitch) {
+			return ErrMismatchingTaskEventTypeForTaskEventTypeName
+		}
+	}
+
+	return nil
+}
+
+// getTypeDiscriminator returns the type discriminator from the EventTypeName field,
+// if non-null, or from the EventType field otherwise. It is meant to be called
+// after unmarshaling.
+//
+// NOTE: meta must have been verified to be valid when calling this.
+func (meta transientTaskEventMeta) getTypeDiscriminator() string {
+	if meta.TaskEventTypeName != nil {
+		return *meta.TaskEventTypeName
+	}
+
+	switch *meta.TaskEventType {
+	case TaskEventTypeStart:
+		return TaskEventTypeNameStart
+	case TaskEventTypeStop:
+		return TaskEventTypeNameStop
+	case TaskEventTypeSwitch:
+		return TaskEventTypeNameSwitch
+	default:
+		panic("expected valid meta")
 	}
 }
 
@@ -524,22 +693,22 @@ func (TaskEvent) eventMarker() {}
 
 func (ev TaskEvent) MarshalJSON() ([]byte, error) {
 	transient := struct {
-		TaskEventType `json:"task_event_type"`
+		transientTaskEventMeta
 		TaskEventBase
 	}{
-		TaskEventType: taskEventTypeFromEvent(ev.TaskEvent),
-		TaskEventBase: TaskEventBase(ev),
+		transientTaskEventMeta: transientTaskEventMetaFromTaskEvent(ev.TaskEvent),
+		TaskEventBase:          TaskEventBase(ev),
 	}
 	return json.Marshal(transient)
 }
 
-func unmarshalTaskEvent(evType TaskEventType, data []byte) (events.TaskEvent, error) {
+func unmarshalTaskEvent(evType string, data []byte) (events.TaskEvent, error) {
 	switch evType {
-	case TaskEventTypeStart:
+	case TaskEventTypeNameStart:
 		return unmarshal[events.StartEvent](data)
-	case TaskEventTypeStop:
+	case TaskEventTypeNameStop:
 		return unmarshal[events.StopEvent](data)
-	case TaskEventTypeSwitch:
+	case TaskEventTypeNameSwitch:
 		return unmarshal[events.SwitchEvent](data)
 	default:
 		return nil, fmt.Errorf("%w: %v", ErrUnknownTaskEventType, evType)
@@ -548,7 +717,7 @@ func unmarshalTaskEvent(evType TaskEventType, data []byte) (events.TaskEvent, er
 
 func (ev *TaskEvent) UnmarshalJSON(data []byte) error {
 	var transientEvent struct {
-		TaskEventType `json:"task_event_type"`
+		transientTaskEventMeta
 		TaskEventMeta
 		TaskEvent json.RawMessage `json:"task_event"`
 	}
@@ -557,7 +726,12 @@ func (ev *TaskEvent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	baseEv, err := unmarshalTaskEvent(transientEvent.TaskEventType, transientEvent.TaskEvent)
+	if err := transientEvent.transientTaskEventMeta.validate(); err != nil {
+		return err
+	}
+
+	transientEvType := transientEvent.getTypeDiscriminator()
+	baseEv, err := unmarshalTaskEvent(transientEvType, transientEvent.TaskEvent)
 	if err != nil {
 		return err
 	}
@@ -583,25 +757,30 @@ func (RequestTaskEvent) requestEventMarker() {}
 
 func (ev RequestTaskEvent) MarshalJSON() ([]byte, error) {
 	transient := struct {
-		TaskEventType TaskEventType `json:"task_event_type"`
+		transientTaskEventMeta
 		RequestTaskEventBase
 	}{
-		TaskEventType:        taskEventTypeFromEvent(ev.TaskEvent),
-		RequestTaskEventBase: RequestTaskEventBase(ev),
+		transientTaskEventMeta: transientTaskEventMetaFromTaskEvent(ev.TaskEvent),
+		RequestTaskEventBase:   RequestTaskEventBase(ev),
 	}
 	return json.Marshal(transient)
 }
 
 func (ev *RequestTaskEvent) UnmarshalJSON(data []byte) error {
 	var transientEvent struct {
-		TaskEventType TaskEventType   `json:"task_event_type"`
-		TaskEvent     json.RawMessage `json:"task_event"`
+		transientTaskEventMeta
+		TaskEvent json.RawMessage `json:"task_event"`
 	}
 	if err := json.Unmarshal(data, &transientEvent); err != nil {
 		return err
 	}
 
-	baseEv, err := unmarshalTaskEvent(transientEvent.TaskEventType, transientEvent.TaskEvent)
+	if err := transientEvent.transientTaskEventMeta.validate(); err != nil {
+		return err
+	}
+
+	transientEvType := transientEvent.getTypeDiscriminator()
+	baseEv, err := unmarshalTaskEvent(transientEvType, transientEvent.TaskEvent)
 	if err != nil {
 		return err
 	}
@@ -621,18 +800,101 @@ const (
 	OperationEventTypeUndo
 )
 
-func operationEventTypeFromEvent(ev events.OperationEvent) OperationEventType {
+const (
+	OperationEventTypeNameCreateTask = "create-task"
+	OperationEventTypeNameRenameTask = "rename-task"
+	OperationEventTypeNameDeleteTask = "delete-task"
+	OperationEventTypeNameUndo       = "undo"
+)
+
+type transientOperationEventMeta struct {
+	OperationEventType     *OperationEventType `json:"operation_event_type"`
+	OperationEventTypeName *string             `json:"operation_event_type_name"`
+}
+
+func transientOperationEventMetaFromOperationEvent(ev events.OperationEvent) transientOperationEventMeta {
+	var opEvType OperationEventType
+	var opEvTypeName string
+
 	switch ev := ev.(type) {
 	case events.CreateTaskEvent:
-		return OperationEventTypeCreateTask
+		opEvType = OperationEventTypeCreateTask
+		opEvTypeName = OperationEventTypeNameCreateTask
 	case events.RenameTaskEvent:
-		return OperationEventTypeRenameTask
+		opEvType = OperationEventTypeRenameTask
+		opEvTypeName = OperationEventTypeNameRenameTask
 	case events.DeleteTaskEvent:
-		return OperationEventTypeDeleteTask
+		opEvType = OperationEventTypeDeleteTask
+		opEvTypeName = OperationEventTypeNameDeleteTask
 	case events.UndoEvent:
-		return OperationEventTypeUndo
+		opEvType = OperationEventTypeUndo
+		opEvTypeName = OperationEventTypeNameUndo
 	default:
 		panic(fmt.Sprintf("handling for %s events not implemented", ev.Name()))
+	}
+
+	return transientOperationEventMeta{
+		OperationEventType:     &opEvType,
+		OperationEventTypeName: &opEvTypeName,
+	}
+}
+
+func (meta transientOperationEventMeta) validate() error {
+	if meta.OperationEventType == nil && meta.OperationEventTypeName == nil {
+		return ErrMissingOperationEventTypeDiscriminator
+	}
+
+	if meta.OperationEventType != nil {
+		if *meta.OperationEventType != OperationEventTypeCreateTask &&
+			*meta.OperationEventType != OperationEventTypeRenameTask &&
+			*meta.OperationEventType != OperationEventTypeDeleteTask &&
+			*meta.OperationEventType != OperationEventTypeUndo {
+			return ErrUnknownOperationEventType
+		}
+	}
+
+	if meta.OperationEventTypeName != nil {
+		if *meta.OperationEventTypeName != OperationEventTypeNameCreateTask &&
+			*meta.OperationEventTypeName != OperationEventTypeNameRenameTask &&
+			*meta.OperationEventTypeName != OperationEventTypeNameDeleteTask &&
+			*meta.OperationEventTypeName != OperationEventTypeNameUndo {
+			return ErrUnknownOperationEventTypeName
+		}
+	}
+
+	if meta.OperationEventType != nil && meta.OperationEventTypeName != nil {
+		if (*meta.OperationEventType == OperationEventTypeCreateTask && *meta.OperationEventTypeName != OperationEventTypeNameCreateTask) ||
+			(*meta.OperationEventType == OperationEventTypeRenameTask && *meta.OperationEventTypeName != OperationEventTypeNameRenameTask) ||
+			(*meta.OperationEventType == OperationEventTypeDeleteTask && *meta.OperationEventTypeName != OperationEventTypeNameDeleteTask) ||
+			(*meta.OperationEventType == OperationEventTypeUndo && *meta.OperationEventTypeName != OperationEventTypeNameUndo) {
+			return ErrMismatchingOperationEventTypeForOperationEventTypeName
+		}
+	}
+
+	return nil
+}
+
+// getTypeDiscriminator returns the type discriminator from the EventTypeName field,
+// if non-null, or from the EventType field otherwise. It is meant to be called
+// after unmarshaling.
+//
+// NOTE: meta must have been verified to be valid when calling this.
+func (meta transientOperationEventMeta) getTypeDiscriminator() string {
+	if meta.OperationEventTypeName != nil {
+		return *meta.OperationEventTypeName
+	}
+
+	switch *meta.OperationEventType {
+	case OperationEventTypeCreateTask:
+		return OperationEventTypeNameCreateTask
+	case OperationEventTypeRenameTask:
+		return OperationEventTypeNameRenameTask
+	case OperationEventTypeDeleteTask:
+		return OperationEventTypeNameDeleteTask
+	case OperationEventTypeUndo:
+		return OperationEventTypeNameUndo
+	default:
+		panic("expected valid meta")
 	}
 }
 
@@ -651,39 +913,44 @@ func (OperationEvent) eventMarker() {}
 
 func (ev OperationEvent) MarshalJSON() ([]byte, error) {
 	transient := struct {
-		OperationEventType `json:"operation_event_type"`
+		transientOperationEventMeta
 		OperationEventBase
 	}{
-		OperationEventType: operationEventTypeFromEvent(ev.OperationEvent),
-		OperationEventBase: OperationEventBase(ev),
+		transientOperationEventMeta: transientOperationEventMetaFromOperationEvent(ev.OperationEvent),
+		OperationEventBase:          OperationEventBase(ev),
 	}
 	return json.Marshal(transient)
 }
 
 func (ev *OperationEvent) UnmarshalJSON(data []byte) error {
 	var transientEvent struct {
-		OperationEventType `json:"operation_event_type"`
-		OperationEvent     json.RawMessage `json:"operation_event"`
+		transientOperationEventMeta
+		OperationEvent json.RawMessage `json:"operation_event"`
 	}
 
 	if err := json.Unmarshal(data, &transientEvent); err != nil {
 		return err
 	}
 
+	if err := transientEvent.transientOperationEventMeta.validate(); err != nil {
+		return err
+	}
+
 	var baseEv events.OperationEvent
 	var err error
 
-	switch transientEvent.OperationEventType {
-	case OperationEventTypeCreateTask:
+	transientEvType := transientEvent.getTypeDiscriminator()
+	switch transientEvType {
+	case OperationEventTypeNameCreateTask:
 		baseEv, err = unmarshal[events.CreateTaskEvent](transientEvent.OperationEvent)
-	case OperationEventTypeRenameTask:
+	case OperationEventTypeNameRenameTask:
 		baseEv, err = unmarshal[events.RenameTaskEvent](transientEvent.OperationEvent)
-	case OperationEventTypeDeleteTask:
+	case OperationEventTypeNameDeleteTask:
 		baseEv, err = unmarshal[events.DeleteTaskEvent](transientEvent.OperationEvent)
-	case OperationEventTypeUndo:
+	case OperationEventTypeNameUndo:
 		baseEv, err = unmarshal[events.UndoEvent](transientEvent.OperationEvent)
 	default:
-		return fmt.Errorf("%w: %v", ErrUnknownOperationEventType, transientEvent.OperationEventType)
+		return fmt.Errorf("%w: %v", ErrUnknownOperationEventType, transientEvType)
 	}
 
 	if err != nil {

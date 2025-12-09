@@ -252,9 +252,15 @@ func makeRequestWithResponse[T api.SuccessResponseData](httpClient *http.Client,
 			switch {
 			case errors.Is(err, api.ErrUnknownEventType):
 				fallthrough
+			case errors.Is(err, api.ErrUnknownEventTypeName):
+				fallthrough
 			case errors.Is(err, api.ErrUnknownTaskEventType):
 				fallthrough
+			case errors.Is(err, api.ErrUnknownTaskEventTypeName):
+				fallthrough
 			case errors.Is(err, api.ErrUnknownOperationEventType):
+				fallthrough
+			case errors.Is(err, api.ErrUnknownOperationEventTypeName):
 				return data, &GeneralBugError{Err: err}
 			default:
 				return data, &InvalidResponseError{
@@ -941,9 +947,15 @@ func (receiver *EventReceiver) Next() (api.EventContainer[api.DynamicEvent], err
 		switch {
 		case errors.Is(err, api.ErrUnknownEventType):
 			fallthrough
+		case errors.Is(err, api.ErrUnknownEventTypeName):
+			fallthrough
 		case errors.Is(err, api.ErrUnknownTaskEventType):
 			fallthrough
+		case errors.Is(err, api.ErrUnknownTaskEventTypeName):
+			fallthrough
 		case errors.Is(err, api.ErrUnknownOperationEventType):
+			fallthrough
+		case errors.Is(err, api.ErrUnknownOperationEventTypeName):
 			return container, &GeneralBugError{
 				Err: err,
 			}
