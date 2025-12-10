@@ -41,7 +41,7 @@ func (a *StringArray) Value() (driver.Value, error) {
 
 	var quotedJoinedArr string
 	for i, s := range a.arr {
-		if i < len(s)-1 {
+		if i < len(a.arr)-1 {
 			quotedJoinedArr += fmt.Sprintf("%s,", strconv.Quote(s))
 		} else {
 			quotedJoinedArr += strconv.Quote(s)
