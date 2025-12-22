@@ -739,7 +739,13 @@ func main() {
 				}
 			}
 
+			tagStats := make(map[string]time.Duration)
 			for _, per := range pers {
+				if nonProductivePer, ok := per.(client.NonProductivePeriod); ok {
+					for _, tag := range nonProductivePer.Tags {
+						tagStats[tag] += nonProductivePer.Duration()
+					}
+				}
 				fmt.Println(formatPeriod(per, args.History.Raw))
 			}
 
@@ -752,6 +758,14 @@ func main() {
 					} else {
 						fmt.Printf("%s = %d\n", stats.Task, uint64(stats.Duration.Seconds()))
 					}
+				}
+			}
+
+			for tag, dur := range tagStats {
+				if !args.History.Raw {
+					fmt.Printf("tag:%s = %s\n", strconv.Quote(tag), cliUtil.FormatDuration(dur))
+				} else {
+					fmt.Printf("tag:%s = %d\n", strconv.Quote(tag), uint64(dur.Seconds()))
 				}
 			}
 
