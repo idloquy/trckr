@@ -16,7 +16,7 @@ func TestSwitchEventNoSameTask(t *testing.T) {
 }
 
 func TestStartEventNoEmptyTaskName(t *testing.T) {
-	if _, err := NewStartEvent("", ""); !errors.Is(err, ErrEmptyTaskName) {
+	if _, err := NewStartEvent("", "", nil); !errors.Is(err, ErrEmptyTaskName) {
 		if err != nil {
 			t.Fatalf("unexpected error while trying to create start event with an empty task name: %v", err)
 		}

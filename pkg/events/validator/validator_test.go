@@ -440,6 +440,39 @@ func TestPartialStopReasonInFirst(t *testing.T) {
 	}
 }
 
+func TestNoStopTagsInFirst(t *testing.T) {
+	v := DefaultValidator
+
+	evs := []events.TaskEvent{}
+	ev := events.StartEvent{
+		Task:       "foo",
+		StopReason: "",
+		StopTags:   []string{"foo"},
+	}
+
+	if err := v.ValidateSequence(evs, ev); !errors.Is(err, ErrUnexpectedStopTags) {
+		if err != nil {
+			t.Fatalf("unexpected error when trying to use start event with stop tags as the first event: %v", err)
+		}
+		t.Fatalf("invalid event sequence allowed: start event with stop tags allowed as the first event")
+	}
+}
+
+func TestPartialStopTagsInFirst(t *testing.T) {
+	v := ForPartialSequence()
+
+	evs := []events.TaskEvent{}
+	ev := events.StartEvent{
+		Task:       "foo",
+		StopReason: "",
+		StopTags:   []string{"foo"},
+	}
+
+	if err := v.ValidateSequence(evs, ev); err != nil {
+		t.Fatalf("unexpected error when trying to use start event with stop tags as the first event with a partial sequence validator: %v", err)
+	}
+}
+
 func TestNoDoubleStart(t *testing.T) {
 	v := DefaultValidator
 

@@ -4,6 +4,7 @@ package events
 
 import (
 	"errors"
+	"reflect"
 
 	"github.com/idloquy/trckr/pkg/tasks"
 )
@@ -20,6 +21,7 @@ type Event interface {
 	Kind() string
 	Name() string
 	Validate() error
+	Equal(Event) bool
 }
 
 type baseEvent struct{}
@@ -47,22 +49,25 @@ func (ev baseTaskEvent) Kind() string {
 }
 
 // A StartEvent represents the starting of a task. The reason leading to the
-// stopping of the previous task may be present in the StopReason field.
+// stopping of the previous task may be present in the StopReason field, and tags
+// for the stopped period may be specified in the StopTags field.
 type StartEvent struct {
 	baseTaskEvent
-	Task       string `json:"task"`
-	StopReason string `json:"stop_reason"`
+	Task       string   `json:"task"`
+	StopReason string   `json:"stop_reason"`
+	StopTags   []string `json:"stop_tags"`
 }
 
 // NewStartEvent returns a StartEvent for the specified task. If non-empty, the
 // specified stop reason is also used.
-func NewStartEvent(task, stopReason string) (StartEvent, error) {
+func NewStartEvent(task, stopReason string, stopTags []string) (StartEvent, error) {
 	ev := StartEvent{
 		baseTaskEvent: baseTaskEvent{
 			baseEvent: baseEvent{},
 		},
 		Task:       task,
 		StopReason: stopReason,
+		StopTags:   stopTags,
 	}
 	err := ev.Validate()
 	return ev, err
@@ -80,6 +85,10 @@ func (ev StartEvent) Validate() error {
 	}
 
 	return nil
+}
+
+func (ev StartEvent) Equal(otherEv Event) bool {
+	return reflect.DeepEqual(ev, otherEv)
 }
 
 // A StopEvent represents the stopping of a task.
@@ -112,6 +121,10 @@ func (ev StopEvent) Validate() error {
 	}
 
 	return nil
+}
+
+func (ev StopEvent) Equal(otherEv Event) bool {
+	return ev == otherEv
 }
 
 // A SwitchEvent represents the switching from one task to another.
@@ -150,6 +163,10 @@ func (ev SwitchEvent) Validate() error {
 	}
 
 	return nil
+}
+
+func (ev SwitchEvent) Equal(otherEv Event) bool {
+	return ev == otherEv
 }
 
 // The OperationEvent interface represents the possible operation event types.
@@ -201,6 +218,10 @@ func (ev CreateTaskEvent) Validate() error {
 	return nil
 }
 
+func (ev CreateTaskEvent) Equal(otherEv Event) bool {
+	return ev == otherEv
+}
+
 // A RenameTaskEvent represents the renaming of a task.
 type RenameTaskEvent struct {
 	baseOperationEvent
@@ -233,6 +254,10 @@ func (ev RenameTaskEvent) Validate() error {
 	return nil
 }
 
+func (ev RenameTaskEvent) Equal(otherEv Event) bool {
+	return ev == otherEv
+}
+
 // A DeleteTaskEvent represents the deletion of a task.
 type DeleteTaskEvent struct {
 	baseOperationEvent
@@ -262,6 +287,10 @@ func (ev DeleteTaskEvent) Validate() error {
 	return nil
 }
 
+func (ev DeleteTaskEvent) Equal(otherEv Event) bool {
+	return ev == otherEv
+}
+
 // An UndoEvent represents the undoing of a task event.
 type UndoEvent struct {
 	baseOperationEvent
@@ -284,4 +313,8 @@ func (ev UndoEvent) Name() string {
 // Validate verifies that the event is valid.
 func (ev UndoEvent) Validate() error {
 	return nil
+}
+
+func (ev UndoEvent) Equal(otherEv Event) bool {
+	return ev == otherEv
 }
