@@ -1,11 +1,27 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/idloquy/trckr/cmd/trckr-http/database"
 	"github.com/idloquy/trckr/pkg/api"
+	"github.com/idloquy/trckr/pkg/events"
 )
 
 func dbTaskEvToAPITaskEv(ev database.TaskEvent) api.EventContainer[api.TaskEvent] {
+	taskEv := ev.TaskEvent
+	switch ev := taskEv.(type) {
+	case events.StartEvent:
+		if ev.StopTags == nil {
+			ev.StopTags = []string{}
+		}
+		taskEv = ev
+	case events.StopEvent:
+	case events.SwitchEvent:
+	default:
+		panic(fmt.Sprintf("handling for %s events not implemented", ev.Name()))
+	}
+
 	return api.EventContainer[api.TaskEvent]{
 		EventContainerMeta: api.EventContainerMeta{
 			At: ev.At(),
@@ -14,7 +30,7 @@ func dbTaskEvToAPITaskEv(ev database.TaskEvent) api.EventContainer[api.TaskEvent
 			TaskEventMeta: api.TaskEventMeta{
 				ID: ev.ID,
 			},
-			TaskEvent: ev.TaskEvent,
+			TaskEvent: taskEv,
 		},
 	}
 }
