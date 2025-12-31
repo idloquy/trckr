@@ -940,7 +940,7 @@ func main() {
 				case events.StartEvent:
 					stopTags := formatStringArray(ev.StopTags, ",")
 					if !args.Quiet {
-						fmt.Printf("task started: id=%d task=%s stop_reason=%s\n stop_tags=[%s]", apiEv.ID, strconv.Quote(ev.Task), strconv.Quote(ev.StopReason), stopTags)
+						fmt.Printf("task started: id=%d task=%s stop_reason=%s stop_tags=[%s]\n", apiEv.ID, strconv.Quote(ev.Task), strconv.Quote(ev.StopReason), stopTags)
 					}
 					if args.Watch.Cmd != "" {
 						err = exec.Command(args.Watch.Cmd, "start", evID, ev.Task, ev.StopReason, stopTags).Run()
