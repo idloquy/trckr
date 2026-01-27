@@ -397,13 +397,7 @@ func (handler *Handler) AddEvent(c *gin.Context) {
 		return
 	}
 
-	apiEv := api.EventContainer[api.TaskEvent]{
-		EventContainerMeta: api.EventContainerMeta{At: dbEv.At()},
-		Event: api.TaskEvent{
-			TaskEventMeta: api.TaskEventMeta{ID: dbEv.ID},
-			TaskEvent:     dbEv.TaskEvent,
-		},
-	}
+	apiEv := dbTaskEvToAPITaskEv(dbEv)
 
 	c.Header("Location", fmt.Sprintf("/v1/events/%d", dbEv.ID))
 	c.JSON(http.StatusCreated, api.NewSuccessResponse(api.TaskEventResponse{TaskEvent: apiEv}))
@@ -529,13 +523,7 @@ func (handler *Handler) GetEvent(c *gin.Context) {
 		return
 	}
 
-	ev := api.EventContainer[api.TaskEvent]{
-		EventContainerMeta: api.EventContainerMeta{At: dbEv.At()},
-		Event: api.TaskEvent{
-			TaskEventMeta: api.TaskEventMeta{ID: dbEv.ID},
-			TaskEvent:     dbEv.TaskEvent,
-		},
-	}
+	ev := dbTaskEvToAPITaskEv(dbEv)
 	c.JSON(http.StatusOK, api.NewSuccessResponse(api.TaskEventResponse{TaskEvent: ev}))
 }
 
